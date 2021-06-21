@@ -20,12 +20,13 @@ events { # 指令块
 }
 
 http {
-
+    server{
         ##
         # Basic Settings
         ##
         location {
         }
+    }    
 }
 
 ```
@@ -59,7 +60,9 @@ root@7250310e890a:/tmp/lua-resty-redis# curl t.weibo.com/args?test=123456
 
 ![](.gitbook/assets/epub_25449739_160.jpeg)
 
-#### lua在nginx解析中的执行流程
+#### lua执行流程
+
+使用nginx指令设置lua代码某个解析阶段执行
 
 ![](.gitbook/assets/lua-zhi-hang-jie-duan-.jpeg)
 
@@ -83,11 +86,16 @@ root@7250310e890a:/tmp/lua-resty-redis# curl t.weibo.com/args?test=123456
         location = /set_cookie {
             content_by_lua_block {
                 local ngx = require "ngx"
+                # >> 通过require将模块加载到代码中
                 local raw_cookie = ngx.req.get_headers()["Cookie"]
+                # >> 获取请求头中Cookie字段
                 local cookie_var = ngx.var.arg_set
+                # >> 获取URL中GET参数
                 if cookie_var == nil then
                     ngx.say("set value is ", cookie_var);
+                    # >> 输出内容到响应体
                     ngx.exit(ngx.HTTP_SERVICE_UNAVAILABLE);
+                    # >> 见下方图片
                 end
                 ngx.header['Set-Cookie'] = {
                     "prometheus_key=".. cookie_var .."; domain=weibo.com; path=/"
@@ -117,6 +125,12 @@ root@7250310e890a:/tmp/lua-resty-redis# curl -vvv  t.weibo.com/set_cookie?set=fi
 set cookie : prometheus_key => first
 * Connection #0 to host t.weibo.com left intact       
 ```
+
+#### 
+
+![](.gitbook/assets/99c862df-742c-452a-a8e9-ce96292ce72e%20%281%29.png)
+
+![](.gitbook/assets/ngx_http_code_map%20%281%29.jpeg)
 
 #### 例2
 
@@ -218,7 +232,9 @@ Current cookie : prometheus_key => first
 
 server {
     listen 80;
-    server_name .weibo.com  localhost;
+    server_name .weibo.com ;
+    # >> 特例等于 *.weibo.com
+    # 可以匹配 sc.weibo.com,shop.sc.weibo.com
     ssl_certificate /usr/local/sinasrv2/etc/cert/server.crt;
     ssl_certificate_key /usr/local/sinasrv2/etc/cert/server.key;
     location  / {
@@ -262,8 +278,8 @@ server {
         end
         local contain_path, err = instance:hget("prometheus", prometheus_cookie);
         if not ok then
-            ngx.exit(ngx.HTTP_SERVICE_UNAVAILABLE);
             ngx.say("failed to connect: ", err)
+            ngx.exit(ngx.HTTP_SERVICE_UNAVAILABLE);
         end
         if cookie["prometheus_key"] ~= nil and contain_path ~= nil then
             ngx.log(ngx.ERR ,"proxy_pass to : "..contain_path);
@@ -274,6 +290,7 @@ server {
         end
         }
         proxy_set_header Host $host;
+        #>> 请求行中的host
         proxy_pass http://$new_uri;
     }
 }    
@@ -317,7 +334,7 @@ server {
 ```text
 127.0.0.1:6379> hgetall prometheus
 1) "first"
-2) "172.18.0.1:8082"
+2) "172.18.0.1:8082" //host ip 与对应容器中nginx的端口
 3) "second"
 4) "172.18.0.1:8083"
 ```
@@ -332,23 +349,7 @@ server {
 
 ```text
 jiangchao@VM-0-7-ubuntu:~$ curl -vvv -H 'Cookie:prometheus_key=first;' t.weibo.com:8081
-* Rebuilt URL to: t.weibo.com:8081/
-*   Trying 127.0.0.1...
-* TCP_NODELAY set
-* Connected to t.weibo.com (127.0.0.1) port 8081 (#0)
-> GET / HTTP/1.1
-> Host: t.weibo.com:8081
-> User-Agent: curl/7.58.0
-> Accept: */*
-> Cookie:prometheus_key=first;
->
-< HTTP/1.1 200 OK
-< Server: nginx/1.14.0 (Ubuntu)
-< Date: Sun, 20 Jun 2021 15:25:42 GMT
-< Content-Type: text/plain; charset=utf-8
-< Content-Length: 21
-< Connection: keep-alive
-<
+
 Hello,World in First
 * Connection #0 to host t.weibo.com left intact
 
@@ -356,24 +357,9 @@ Hello,World in First
 ###########################
 
 
-jiangchao@VM-0-7-ubuntu:~$ curl -vvv -H 'Cookie:prometheus_key=second;' t.weibo.com:8081
-* Rebuilt URL to: t.weibo.com:8081/
-*   Trying 127.0.0.1...
-* TCP_NODELAY set
-* Connected to t.weibo.com (127.0.0.1) port 8081 (#0)
-> GET / HTTP/1.1
-> Host: t.weibo.com:8081
-> User-Agent: curl/7.58.0
-> Accept: */*
-> Cookie:prometheus_key=second;
->
-< HTTP/1.1 200 OK
-< Server: nginx/1.14.0 (Ubuntu)
-< Date: Sun, 20 Jun 2021 15:26:09 GMT
-< Content-Type: text/plain; charset=utf-8
-< Content-Length: 19
-< Connection: keep-alive
-<
+jiangchao@VM-0-7-ubuntu:~$ curl  -vvv -H 'Cookie:prometheus_key=second;' t.weibo.com:8081
+
+
 Hi World in Second
 * Connection #0 to host t.weibo.com left intact
 ```
