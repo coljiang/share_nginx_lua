@@ -66,16 +66,20 @@ root@7250310e890a:/tmp/lua-resty-redis# curl t.weibo.com/args?test=123456
 
 ![](.gitbook/assets/lua-zhi-hang-jie-duan-.jpeg)
 
+阶段材料补充 : 
 
+{% embed url="https://cloud.tencent.com/developer/article/1043931" %}
+
+{% embed url="http://nginx.org/en/docs/http/request\_processing.html" %}
 
 | 指令 | 所处处理阶段 | 使用范围 | 解释 |
 | :--- | :--- | :--- | :--- |
 | init\_by\_lua init\_by\_lua\_file | loading-config | http | nginx Master进程加载配置时执行； 通常用于初始化全局配置/预加载Lua模块 |
 | init\_worker\_by\_lua init\_worker\_by\_lua\_file | starting-worker | http | 每个Nginx Worker进程启动时调用的计时器，如果Master进程不允许则只会在init\_by\_lua之后调用； 通常用于定时拉取配置/数据，或者后端服务的健康检查 |
 | set\_by\_lua set\_by\_lua\_file | rewrite | server,server if,location,location if | 设置nginx变量，可以实现复杂的赋值逻辑；此处是阻塞的，Lua代码要做到非常快； |
-| rewrite\_by\_lua rewrite\_by\_lua\_file | rewrite tail | http,server,location,location if | rrewrite阶段处理，可以实现复杂的转发/重定向逻辑； |
+| **rewrite\_by\_lua rewrite\_by\_lua\_file** | rewrite tail | http,server,location,location if | rrewrite阶段处理，可以实现复杂的转发/重定向逻辑； |
 | access\_by\_lua access\_by\_lua\_file | access tail | http,server,location,location if | 请求访问阶段处理，用于访问控制 |
-| content\_by\_lua content\_by\_lua\_file | content | location，location if | 内容处理器，接收请求处理并输出响应 |
+| **content\_by\_lua content\_by\_lua\_file** | content | location，location if | 内容处理器，接收请求处理并输出响应 |
 | header\_filter\_by\_lua header\_filter\_by\_lua\_file | output-header-filter | http，server，location，location if | 设置header和cookie |
 | body\_filter\_by\_lua body\_filter\_by\_lua\_file | output-body-filter | http，server，location，location if | 对响应数据进行过滤，比如截断、替换。 |
 | log\_by\_lua log\_by\_lua\_file | log | http，server，location，location if | log阶段处理，比如记录访问量/统计平均响应时间 |
@@ -220,7 +224,7 @@ Current cookie : prometheus_key => first
 
 目标 : 根据cookie在单一服务器上使用项目的不同分支.\(例如cookie prometheus\_key-first 会使用shop项目A分支;cookie prometheus\_key-second会使用shop项目B分支\)
 
-![&#x6D41;&#x7A0B;&#x56FE;](.gitbook/assets/liu-cheng-tu-.jpg)
+![&#x6D41;&#x7A0B;&#x56FE;](.gitbook/assets/flowchartdiagram1.jpg)
 
 ![&#x65F6;&#x5E8F;&#x56FE;](.gitbook/assets/qing-qiu-liu-cheng-.jpg)
 
