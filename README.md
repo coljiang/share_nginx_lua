@@ -62,7 +62,14 @@ root@7250310e890a:/tmp/lua-resty-redis# curl t.weibo.com/args?test=123456
 
 #### lua执行流程
 
-使用nginx指令设置lua代码某个解析阶段执行
+使用指令块设置lua代码某个解析阶段执行.
+
+主要分为4个部分:
+
+1. 初始化
+2. 请求地址重写/权限检查阶段
+3. 内容产生阶段
+4. 日志模块处理阶段
 
 ![](.gitbook/assets/lua-zhi-hang-jie-duan-.jpeg)
 
